@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import LCDScreen from './components/LCDScreen';
 import ControlPad from './components/ControlPad';
 import { AudioFile, PlayerState, ScreenMode } from './types';
+import { Plus, Minus } from 'lucide-react';
 
 const App: React.FC = () => {
   // State
@@ -110,7 +111,7 @@ const App: React.FC = () => {
       audio.removeEventListener('durationchange', handleDurationChange);
       audio.removeEventListener('ended', handleEnded);
     };
-  }, [files, playTrack]); // Dependencies are important here
+  }, [files, playTrack]);
 
   // Update volume
   useEffect(() => {
@@ -143,7 +144,7 @@ const App: React.FC = () => {
     if (screenMode === ScreenMode.MENU) {
         setCurrentIndex(prev => (prev - 1 + files.length) % files.length);
     } 
-    // In NOW PLAYING: Volume Up (Classic logic: Wheel moves volume)
+    // In NOW PLAYING: Volume Up (Keep D-Pad redundancy)
     else {
         setVolume(prev => Math.min(prev + 0.1, 1));
     }
@@ -156,45 +157,11 @@ const App: React.FC = () => {
     if (screenMode === ScreenMode.MENU) {
         setCurrentIndex(prev => (prev + 1) % files.length);
     } 
-    // In NOW PLAYING: Volume Down (or Play/Pause depending on interpretation of 'Play' icon at bottom)
-    // We will use it for Volume Down to match Up behavior, but checking if the user wants Play/Pause via bottom button?
-    // The visual UI shows Play/Pause icon at bottom. 
-    // Let's implement Hybrid: If held? No, let's keep it simple.
-    // Bottom Button = Play/Pause logic usually.
-    // BUT the wheel logic suggests Up/Down is scrolling/volume.
-    // Let's map Down Button specifically to Toggle Play/Pause if in Menu? No, that's center.
-    // Let's make Down = Scroll Down (Menu) / PlayPause (Playing)? 
-    // Actually, looking at the iPod Clickwheel: Top=Menu, Bottom=Play/Pause, Left=Prev, Right=Next, Center=Select.
-    // Scrolling was done by *rotating*. Since we have buttons:
-    // Let's map UP/DOWN to Scroll in Menu.
-    // In Playing: UP/DOWN to Volume.
-    // To respect the Visual Icon on Bottom Button (Play/Pause):
-    // If we click Bottom Button in Playing mode -> Toggle Play/Pause.
+    // In NOW PLAYING: Play/Pause
     else {
-        // Option A: Volume Down
-        // setVolume(prev => Math.max(prev - 0.1, 0)); 
-        
-        // Option B: Play/Pause (Matches icon)
         togglePlayPause();
     }
   };
-
-  // We need a specific volume control if Up/Down are occupied. 
-  // Let's Re-evaluate based on "Retro MP3" D-pad standard.
-  // Usually: Up/Down = Volume (if playing) or Next/Prev File. Left/Right = Seek.
-  // Let's stick to the Visual Icons on the rendered D-Pad component.
-  // Top: Menu. Bottom: Play/Pause. Left: Prev. Right: Next. Center: Select.
-  // But how do we Scroll the menu?
-  // Let's use Left/Right for Seek/PrevNext, and we need scrolling.
-  // Let's make the "Wheel" metaphor work this way:
-  // When in MENU: Top (Menu) goes up? No.
-  // Let's override for usability:
-  // Top (Menu Button) -> Go Back / Toggle View.
-  // Bottom (Play Button) -> Toggle Play / Pause.
-  // Left (Prev) -> Prev Song / Scroll Up in Menu (Counter-clockwise).
-  // Right (Next) -> Next Song / Scroll Down in Menu (Clockwise).
-  // Center -> Select.
-  // This mimics the rotation.
 
   const handleWheelNext = () => { // Right button click
     if (screenMode === ScreenMode.MENU) {
@@ -222,59 +189,82 @@ const App: React.FC = () => {
     }
   };
 
+  // Dedicated Volume Handlers
+  const handleVolUp = () => setVolume(prev => Math.min(prev + 0.05, 1));
+  const handleVolDown = () => setVolume(prev => Math.max(prev - 0.05, 0));
+
   return (
-    <div className="relative flex flex-col items-center">
+    <div className="relative flex flex-col items-center justify-center min-h-screen">
       
-      {/* The Physical Device Casing */}
-      <div className="w-[320px] h-[520px] bg-gradient-to-br from-gray-200 to-gray-400 rounded-[30px] p-6 shadow-[20px_20px_60px_#bebebe,-20px_-20px_60px_#ffffff] border border-gray-100 flex flex-col items-center gap-8 relative overflow-hidden">
+      {/* Wrapper for the 3D Device */}
+      <div className="relative group">
         
-        {/* Metallic Texture overlay */}
-        <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/brushed-alum.png')] pointer-events-none rounded-[30px]" />
-        
-        {/* Screen Container */}
-        <div className="w-full flex justify-center z-10">
-          <LCDScreen 
-            files={files}
-            currentIndex={currentIndex}
-            screenMode={screenMode}
-            playerState={playerState}
-            currentTime={currentTime}
-            duration={duration}
-            volume={volume}
-            onFileSelect={handleFileSelect}
-          />
+        {/* Side Buttons (Right Side) */}
+        <div className="absolute top-[120px] -right-4 flex flex-col gap-3 z-0">
+             <button 
+                onClick={handleVolUp}
+                className="w-6 h-14 bg-gradient-to-l from-stone-300 to-stone-400 rounded-r-md border-y border-r border-stone-500/50 shadow-[4px_4px_8px_rgba(0,0,0,0.2)] active:translate-x-[-2px] active:shadow-inner transition-all flex items-center justify-center text-stone-600 hover:bg-stone-300"
+                title="Volume Up"
+                aria-label="Increase Volume"
+             >
+               <Plus size={14} strokeWidth={3} />
+             </button>
+             <button 
+                onClick={handleVolDown}
+                className="w-6 h-14 bg-gradient-to-l from-stone-300 to-stone-400 rounded-r-md border-y border-r border-stone-500/50 shadow-[4px_4px_8px_rgba(0,0,0,0.2)] active:translate-x-[-2px] active:shadow-inner transition-all flex items-center justify-center text-stone-600 hover:bg-stone-300"
+                title="Volume Down"
+                aria-label="Decrease Volume"
+             >
+               <Minus size={14} strokeWidth={3} />
+             </button>
         </div>
 
-        {/* Controls Container */}
-        <div className="flex-1 flex items-center justify-center z-10 w-full mt-4">
-          <ControlPad 
-            onMenu={handleMenu} // Top Button
-            onDown={() => {
-                // Bottom Button: Play/Pause
-                togglePlayPause();
-            }}
-            onLeft={handleWheelPrev} // Left Button
-            onRight={handleWheelNext} // Right Button
-            onCenter={handleCenter} // Center Button
-            onUp={() => { 
-                // We actually mapped "Menu" to the visual "Up/Menu" button in ControlPad.
-                // But if we want a separate 'Scroll Up' that isn't Left/Right...
-                // Let's stick to the Left/Right = Scroll logic for menu navigation like a wheel.
-                // So Up button is strictly Menu.
-                handleMenu();
-            }}
-          />
+        {/* The Physical Device Casing */}
+        {/* Enhanced 3D effects: thicker shadows, gradients, and borders */}
+        <div className="relative z-10 w-[340px] h-[540px] bg-gradient-to-br from-[#f0f0f0] to-[#c0c0c0] rounded-[40px] p-8 shadow-[inset_2px_2px_5px_rgba(255,255,255,0.7),inset_-2px_-2px_5px_rgba(0,0,0,0.1),20px_20px_60px_rgba(0,0,0,0.4),-10px_-10px_40px_rgba(255,255,255,0.8)] border border-stone-300 flex flex-col items-center gap-8 overflow-hidden">
+          
+          {/* Metallic/Plastic Texture overlay */}
+          <div className="absolute inset-0 opacity-[0.05] bg-[url('https://www.transparenttextures.com/patterns/brushed-alum.png')] pointer-events-none rounded-[40px]" />
+          
+          {/* Screen Bezel Area */}
+          <div className="w-full flex justify-center z-10 relative">
+             {/* Dark Glassy Bezel around Screen */}
+             <div className="bg-stone-800/5 p-1 rounded-lg shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)] backdrop-blur-[1px]">
+               <div className="rounded border-[3px] border-stone-400/30 shadow-lg bg-stone-900/10">
+                 <LCDScreen 
+                  files={files}
+                  currentIndex={currentIndex}
+                  screenMode={screenMode}
+                  playerState={playerState}
+                  currentTime={currentTime}
+                  duration={duration}
+                  volume={volume}
+                  onFileSelect={handleFileSelect}
+                />
+               </div>
+             </div>
+          </div>
+
+          {/* Controls Container */}
+          <div className="flex-1 flex items-center justify-center z-10 w-full mt-2">
+            <ControlPad 
+              onMenu={handleMenu} 
+              onDown={handleDown}
+              onLeft={handleWheelPrev}
+              onRight={handleWheelNext}
+              onCenter={handleCenter}
+              onUp={handleUp}
+            />
+          </div>
         </div>
       </div>
       
-      {/* Reflection / Ground Shadow */}
-      <div className="w-[280px] h-[20px] bg-black/20 blur-xl rounded-[100%] mt-[-20px] z-[-1]" />
+      {/* Ground Shadow / Reflection */}
+      <div className="w-[300px] h-[30px] bg-black/20 blur-xl rounded-[100%] mt-[-25px] z-[-1]" />
 
-      <div className="mt-8 text-stone-500 text-xs font-mono text-center">
-        <p>Use the buttons to navigate.</p>
-        <p>Left/Right to Scroll & Skip.</p>
-        <p>Center to Select.</p>
-        <p>Bottom to Play/Pause.</p>
+      <div className="mt-8 text-stone-500 text-xs font-mono text-center space-y-1">
+        <p>Use side buttons for volume.</p>
+        <p>Center to Select • Bottom to Play/Pause</p>
       </div>
 
     </div>
