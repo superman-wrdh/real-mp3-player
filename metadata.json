@@ -1,0 +1,5 @@
+{
+  "name": "Retro MP3 Player",
+  "description": "A retro-styled HTML5 MP3 player that allows users to play local audio files from a selected folder using a nostalgic interface.",
+  "requestFramePermissions": []
+}

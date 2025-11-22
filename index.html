@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Retro MP3 Player</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              retro: {
+                case: '#e0e0e0',
+                screen: '#7c9c84',
+                screenText: '#2d332d',
+                button: '#f0f0f0',
+                buttonActive: '#d0d0d0',
+              }
+            },
+            fontFamily: {
+              lcd: ['"VT323"', 'monospace'],
+            },
+            boxShadow: {
+              'inner-lg': 'inset 0 4px 6px -1px rgba(0, 0, 0, 0.3), inset 0 2px 4px -1px rgba(0, 0, 0, 0.15)',
+              'bezel': 'inset 2px 2px 5px rgba(255,255,255,0.7), inset -2px -2px 5px rgba(0,0,0,0.2)',
+              'btn': '4px 4px 8px #bebebe, -4px -4px 8px #ffffff',
+              'btn-pressed': 'inset 4px 4px 8px #bebebe, inset -4px -4px 8px #ffffff',
+            }
+          },
+        },
+      }
+    </script>
+    <style>
+      /* Custom scrollbar for the LCD screen */
+      .lcd-scrollbar::-webkit-scrollbar {
+        width: 6px;
+      }
+      .lcd-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .lcd-scrollbar::-webkit-scrollbar-thumb {
+        background-color: #2d332d;
+        border-radius: 3px;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/"
+  }
+}
+</script>
+</head>
+  <body class="bg-stone-200 h-screen w-screen overflow-hidden flex items-center justify-center">
+    <div id="root"></div>
+  </body>
+</html>
