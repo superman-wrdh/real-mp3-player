@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import LCDScreen from './components/LCDScreen';
 import ControlPad from './components/ControlPad';
 import { AudioFile, PlayerState, ScreenMode } from './types';
-import { Plus, Minus } from 'lucide-react';
+import { Plus, Minus, Power } from 'lucide-react';
 
 const App: React.FC = () => {
   // State
@@ -13,6 +13,9 @@ const App: React.FC = () => {
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [duration, setDuration] = useState<number>(0);
   const [volume, setVolume] = useState<number>(0.8);
+  
+  // Power State
+  const [powerState, setPowerState] = useState<'OFF' | 'BOOTING' | 'ON'>('ON');
 
   // Audio Ref
   const audioRef = useRef<HTMLAudioElement>(new Audio());
@@ -120,12 +123,30 @@ const App: React.FC = () => {
 
   // --- CONTROLS HANDLERS ---
 
+  const handlePower = () => {
+    if (powerState === 'ON') {
+      // Turn OFF
+      setPowerState('OFF');
+      audioRef.current.pause();
+      setPlayerState(PlayerState.PAUSED);
+    } else if (powerState === 'OFF') {
+      // Turn ON
+      setPowerState('BOOTING');
+      setTimeout(() => {
+        setPowerState('ON');
+        setScreenMode(ScreenMode.MENU); // Reset to menu on boot
+      }, 3000); // 3 seconds boot time
+    }
+  };
+
   const handleMenu = () => {
+    if (powerState !== 'ON') return;
     if (files.length === 0) return;
     setScreenMode(prev => prev === ScreenMode.MENU ? ScreenMode.NOW_PLAYING : ScreenMode.MENU);
   };
 
   const handleCenter = () => {
+    if (powerState !== 'ON') return;
     if (files.length === 0) return;
 
     if (screenMode === ScreenMode.MENU) {
@@ -138,6 +159,7 @@ const App: React.FC = () => {
   };
 
   const handleUp = () => {
+    if (powerState !== 'ON') return;
     if (files.length === 0) return;
     
     // In MENU: Scroll Up
@@ -151,6 +173,7 @@ const App: React.FC = () => {
   };
 
   const handleDown = () => {
+    if (powerState !== 'ON') return;
     if (files.length === 0) return;
 
     // In MENU: Scroll Down
@@ -164,6 +187,7 @@ const App: React.FC = () => {
   };
 
   const handleWheelNext = () => { // Right button click
+    if (powerState !== 'ON') return;
     if (screenMode === ScreenMode.MENU) {
         setCurrentIndex(prev => (prev + 1) % files.length);
     } else {
@@ -175,6 +199,7 @@ const App: React.FC = () => {
   };
 
   const handleWheelPrev = () => { // Left button click
+    if (powerState !== 'ON') return;
     if (screenMode === ScreenMode.MENU) {
         setCurrentIndex(prev => (prev - 1 + files.length) % files.length);
     } else {
@@ -190,8 +215,15 @@ const App: React.FC = () => {
   };
 
   // Dedicated Volume Handlers
-  const handleVolUp = () => setVolume(prev => Math.min(prev + 0.05, 1));
-  const handleVolDown = () => setVolume(prev => Math.max(prev - 0.05, 0));
+  const handleVolUp = () => {
+    if (powerState !== 'ON') return;
+    setVolume(prev => Math.min(prev + 0.05, 1));
+  };
+  
+  const handleVolDown = () => {
+    if (powerState !== 'ON') return;
+    setVolume(prev => Math.max(prev - 0.05, 0));
+  };
 
   return (
     <div className="relative flex flex-col items-center justify-center min-h-screen">
@@ -199,28 +231,45 @@ const App: React.FC = () => {
       {/* Wrapper for the 3D Device */}
       <div className="relative group">
         
-        {/* Side Buttons (Right Side) */}
-        <div className="absolute top-[120px] -right-4 flex flex-col gap-3 z-0">
+        {/* Right Side Buttons Container */}
+        <div className="absolute top-[60px] -right-4 flex flex-col gap-10 z-0">
+             
+             {/* Power Button */}
              <button 
-                onClick={handleVolUp}
-                className="w-6 h-14 bg-gradient-to-l from-stone-300 to-stone-400 rounded-r-md border-y border-r border-stone-500/50 shadow-[4px_4px_8px_rgba(0,0,0,0.2)] active:translate-x-[-2px] active:shadow-inner transition-all flex items-center justify-center text-stone-600 hover:bg-stone-300"
-                title="Volume Up"
-                aria-label="Increase Volume"
+                onClick={handlePower}
+                className={`
+                  w-6 h-10 rounded-r-md border-y border-r border-red-800/50 shadow-[4px_4px_8px_rgba(0,0,0,0.2)] 
+                  active:translate-x-[-2px] active:shadow-inner transition-all flex items-center justify-center text-white
+                  ${powerState === 'OFF' ? 'bg-gradient-to-l from-red-800 to-red-900 translate-x-[-1px]' : 'bg-gradient-to-l from-red-500 to-red-600 hover:brightness-110'}
+                `}
+                title="Power On/Off"
+                aria-label="Power"
              >
-               <Plus size={14} strokeWidth={3} />
+               <Power size={14} strokeWidth={3} />
              </button>
-             <button 
-                onClick={handleVolDown}
-                className="w-6 h-14 bg-gradient-to-l from-stone-300 to-stone-400 rounded-r-md border-y border-r border-stone-500/50 shadow-[4px_4px_8px_rgba(0,0,0,0.2)] active:translate-x-[-2px] active:shadow-inner transition-all flex items-center justify-center text-stone-600 hover:bg-stone-300"
-                title="Volume Down"
-                aria-label="Decrease Volume"
-             >
-               <Minus size={14} strokeWidth={3} />
-             </button>
+
+             {/* Volume Buttons Group */}
+             <div className="flex flex-col gap-2">
+                 <button 
+                    onClick={handleVolUp}
+                    className="w-6 h-14 bg-gradient-to-l from-stone-300 to-stone-400 rounded-r-md border-y border-r border-stone-500/50 shadow-[4px_4px_8px_rgba(0,0,0,0.2)] active:translate-x-[-2px] active:shadow-inner transition-all flex items-center justify-center text-stone-600 hover:bg-stone-300"
+                    title="Volume Up"
+                    aria-label="Increase Volume"
+                 >
+                   <Plus size={14} strokeWidth={3} />
+                 </button>
+                 <button 
+                    onClick={handleVolDown}
+                    className="w-6 h-14 bg-gradient-to-l from-stone-300 to-stone-400 rounded-r-md border-y border-r border-stone-500/50 shadow-[4px_4px_8px_rgba(0,0,0,0.2)] active:translate-x-[-2px] active:shadow-inner transition-all flex items-center justify-center text-stone-600 hover:bg-stone-300"
+                    title="Volume Down"
+                    aria-label="Decrease Volume"
+                 >
+                   <Minus size={14} strokeWidth={3} />
+                 </button>
+             </div>
         </div>
 
         {/* The Physical Device Casing */}
-        {/* Enhanced 3D effects: thicker shadows, gradients, and borders */}
         <div className="relative z-10 w-[340px] h-[540px] bg-gradient-to-br from-[#f0f0f0] to-[#c0c0c0] rounded-[40px] p-8 shadow-[inset_2px_2px_5px_rgba(255,255,255,0.7),inset_-2px_-2px_5px_rgba(0,0,0,0.1),20px_20px_60px_rgba(0,0,0,0.4),-10px_-10px_40px_rgba(255,255,255,0.8)] border border-stone-300 flex flex-col items-center gap-8 overflow-hidden">
           
           {/* Metallic/Plastic Texture overlay */}
@@ -240,6 +289,7 @@ const App: React.FC = () => {
                   duration={duration}
                   volume={volume}
                   onFileSelect={handleFileSelect}
+                  powerState={powerState}
                 />
                </div>
              </div>
@@ -263,7 +313,7 @@ const App: React.FC = () => {
       <div className="w-[300px] h-[30px] bg-black/20 blur-xl rounded-[100%] mt-[-25px] z-[-1]" />
 
       <div className="mt-8 text-stone-500 text-xs font-mono text-center space-y-1">
-        <p>Use side buttons for volume.</p>
+        <p>Use side buttons for Power and Volume.</p>
         <p>Center to Select • Bottom to Play/Pause</p>
       </div>
 

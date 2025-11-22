@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { AudioFile, PlayerState, ScreenMode } from '../types';
-import { formatTime, truncateFileName } from '../utils';
+import { formatTime } from '../utils';
 import { Battery, Music, Volume2, Disc } from 'lucide-react';
 
 interface LCDScreenProps {
@@ -12,6 +12,7 @@ interface LCDScreenProps {
   duration: number;
   volume: number;
   onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  powerState: 'OFF' | 'BOOTING' | 'ON';
 }
 
 const LCDScreen: React.FC<LCDScreenProps> = ({
@@ -23,6 +24,7 @@ const LCDScreen: React.FC<LCDScreenProps> = ({
   duration,
   volume,
   onFileSelect,
+  powerState
 }) => {
   const listRef = useRef<HTMLUListElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -41,6 +43,34 @@ const LCDScreen: React.FC<LCDScreenProps> = ({
     fileInputRef.current?.click();
   };
 
+  // --- POWER OFF STATE ---
+  if (powerState === 'OFF') {
+     return (
+        <div className="w-64 h-48 bg-[#181818] rounded-md shadow-[inset_0_2px_10px_rgba(0,0,0,0.8)] border-4 border-[#333] relative overflow-hidden select-none">
+            {/* Screen reflection/glare for realism when off */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent pointer-events-none"></div>
+        </div>
+     );
+  }
+
+  // --- BOOTING STATE ---
+  if (powerState === 'BOOTING') {
+      return (
+        <div className="w-64 h-48 bg-retro-screen rounded-md shadow-inner-lg p-4 font-lcd text-retro-screenText relative overflow-hidden select-none border-4 border-gray-400/50 flex flex-col items-center justify-center">
+          {/* Scanlines overlay */}
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,6px_100%] pointer-events-none z-10 opacity-60"></div>
+          
+          <div className="z-20 text-center animate-pulse flex flex-col items-center gap-2">
+             <div className="border-2 border-retro-screenText px-2 rounded-sm">
+                <h1 className="text-xl font-bold tracking-widest">Super播放器</h1>
+             </div>
+             <p className="text-sm tracking-wide">- by 超锅 -</p>
+          </div>
+        </div>
+      );
+  }
+
+  // --- ON STATE (Existing Logic) ---
   const renderContent = () => {
     if (files.length === 0) {
       return (
@@ -48,7 +78,7 @@ const LCDScreen: React.FC<LCDScreenProps> = ({
           <p className="text-lg animate-pulse">NO DISK</p>
           <button 
             onClick={handleOpenFolder}
-            className="border-2 border-retro-screenText px-2 py-1 text-sm hover:bg-retro-screenText hover:text-retro-screen transition-colors"
+            className="border-2 border-retro-screenText px-2 py-1 text-sm hover:bg-retro-screenText hover:text-retro-screen transition-colors cursor-pointer"
           >
             LOAD FOLDER
           </button>
@@ -57,7 +87,7 @@ const LCDScreen: React.FC<LCDScreenProps> = ({
             ref={fileInputRef}
             onChange={onFileSelect}
             className="hidden"
-            // @ts-ignore - webkitdirectory is non-standard but supported
+            // @ts-ignore
             webkitdirectory=""
             directory=""
             multiple
